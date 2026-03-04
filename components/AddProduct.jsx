@@ -45,7 +45,16 @@ const AddProduct = ({ onClose, onSave, categories = [], initialData = null }) =>
     const [height, setHeight] = useState(initialData?.shipping?.dimensions?.height || '');
 
     // Variants
-    const [variants, setVariants] = useState(initialData?.variants || []);
+    const [variants, setVariants] = useState(
+        (initialData?.variants || []).map(v => ({
+            ...v,
+            size: v.size || v.name || (typeof v.weight === 'string' ? v.weight : ''),
+            price: v.price || '',
+            stock: v.stock || (v.inventory || '')
+        }))
+    );
+
+
 
     // SEO
     const [metaTitle, setMetaTitle] = useState(initialData?.seo?.title || '');
@@ -53,8 +62,26 @@ const AddProduct = ({ onClose, onSave, categories = [], initialData = null }) =>
 
     // UI states
     const [loading, setLoading] = useState(false);
-    const [openAccordion, setOpenAccordion] = useState('inventory');
+    const [uploading, setUploading] = useState(false);
+    const [openAccordion, setOpenAccordion] = useState((initialData?.variants && initialData.variants.length > 0) ? 'variants' : 'inventory');
+
     const [activeSection, setActiveSection] = useState('Product Information');
+
+    // Upload a file to GCS via backend and return the public URL
+    const uploadToGCS = async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch('http://localhost:5000/upload', {
+            method: 'POST',
+            body: formData
+        });
+        if (!response.ok) {
+            const err = await response.json();
+            throw new Error(err.message || 'Upload failed');
+        }
+        const data = await response.json();
+        return data.url; // permanent GCS public URL
+    };
 
     const getSections = () => {
         const baseSections = [
@@ -86,29 +113,33 @@ const AddProduct = ({ onClose, onSave, categories = [], initialData = null }) =>
             name,
             price: parseFloat(price),
             discountedPrice: discountedPrice ? parseFloat(discountedPrice) : undefined,
-            image: image || (images.length > 0 ? images[0] : ''),
-            images,
+            image: thumbnail || (media.length > 0 ? media[0].url : ''),
+            images: media.map(m => m.url),
             description,
             category,
             thumbnail,
             cover,
             media,
             stock: parseInt(stock) || 0,
-            weight: parseFloat(weight),
+            weight: parseFloat(weight) || 0,
             dimensions: {
-                length: parseFloat(length),
-                width: parseFloat(width),
-                height: parseFloat(height)
+                length: parseFloat(length) || 0,
+                width: parseFloat(width) || 0,
+                height: parseFloat(height) || 0
             },
-            variants: variants.map(v => ({
-                ...v,
+            variants: variants.length > 0 ? variants.map(v => ({
+                size: v.size,
+                name: v.size, // Sync for backend display
                 price: parseFloat(v.price) || 0,
                 discountedPrice: v.discountedPrice ? parseFloat(v.discountedPrice) : undefined,
                 stock: parseInt(v.stock) || 0,
-                thumbnail: v.thumbnail || v.images?.[0] || '', // Migration/fallback
-                cover: v.cover || { type: 'image', url: v.images?.[0] || '' },
-                media: v.media || (v.images ? v.images.map(img => ({ type: 'image', url: img })) : [])
-            })),
+                sku: v.sku || '',
+                thumbnail: v.thumbnail || '',
+                cover: v.cover || { type: 'image', url: '' },
+                media: v.media || []
+            })) : [],
+
+
             seo: {
                 title: metaTitle,
                 description: metaDescription
@@ -469,31 +500,48 @@ const AddProduct = ({ onClose, onSave, categories = [], initialData = null }) =>
                                     {/* Upload Buttons */}
                                     <div
                                         onClick={() => {
+                                            if (uploading) return;
                                             const input = document.createElement('input');
                                             input.type = 'file';
                                             input.accept = 'image/*,video/*';
                                             input.multiple = true;
-                                            input.onchange = (e) => {
+                                            input.onchange = async (e) => {
                                                 const files = Array.from(e.target.files);
-                                                files.forEach(file => {
-                                                    const reader = new FileReader();
-                                                    reader.onload = (re) => {
+                                                setUploading(true);
+                                                try {
+                                                    for (const file of files) {
                                                         const type = file.type.startsWith('video') ? 'video' : 'image';
-                                                        setMedia(prev => [...prev, { type, url: re.target.result }]);
-                                                        if (!thumbnail && type === 'image') setThumbnail(re.target.result);
-                                                        if (!cover.url) setCover({ type, url: re.target.result });
-                                                    };
-                                                    reader.readAsDataURL(file);
-                                                });
+                                                        const url = await uploadToGCS(file);
+                                                        setMedia(prev => [...prev, { type, url }]);
+                                                        if (!thumbnail && type === 'image') setThumbnail(url);
+                                                        if (!cover.url) setCover({ type, url });
+                                                    }
+                                                } catch (err) {
+                                                    alert('Image upload failed: ' + err.message);
+                                                } finally {
+                                                    setUploading(false);
+                                                }
                                             };
                                             input.click();
                                         }}
-                                        className="aspect-square border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-[#146eb4] hover:bg-blue-50 transition-all group bg-white"
+                                        className={`aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center gap-2 transition-all group bg-white ${uploading
+                                            ? 'border-[#146eb4] bg-blue-50 cursor-wait'
+                                            : 'border-gray-200 cursor-pointer hover:border-[#146eb4] hover:bg-blue-50'
+                                            }`}
                                     >
                                         <div className="p-2 bg-gray-100 rounded-lg group-hover:bg-[#146eb4]/10">
-                                            <Upload size={20} className="text-gray-400 group-hover:text-[#146eb4]" />
+                                            {uploading ? (
+                                                <svg className="animate-spin w-5 h-5 text-[#146eb4]" fill="none" viewBox="0 0 24 24">
+                                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                                </svg>
+                                            ) : (
+                                                <Upload size={20} className="text-gray-400 group-hover:text-[#146eb4]" />
+                                            )}
                                         </div>
-                                        <span className="text-[11px] font-medium text-gray-500 group-hover:text-[#146eb4]">Add Media</span>
+                                        <span className="text-[11px] font-medium text-gray-500 group-hover:text-[#146eb4]">
+                                            {uploading ? 'Uploading...' : 'Add Media'}
+                                        </span>
                                     </div>
                                 </div>
                                 <p className="text-[11px] text-gray-400 mt-4">Upload multiple images and videos. Mark one for Thumbnail and one for Cover.</p>
@@ -603,13 +651,21 @@ const AddProduct = ({ onClose, onSave, categories = [], initialData = null }) =>
                                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
                             >
                                 <div>
-                                    <h2 className="text-[16px] font-bold text-gray-900">Variants</h2>
+                                    <div className="flex items-center gap-2">
+                                        <h2 className="text-[16px] font-bold text-gray-900">Variants</h2>
+                                        {variants.length > 0 && (
+                                            <span className="px-2 py-0.5 bg-[#146eb4]/10 text-[#146eb4] text-[10px] font-bold rounded-full">
+                                                {variants.length} {variants.length === 1 ? 'Variant' : 'Variants'}
+                                            </span>
+                                        )}
+                                    </div>
                                     <p className="text-[12px] text-gray-500 mt-1">
                                         {category === 'Dry Fruits'
                                             ? "Add options for different weights or quantities."
                                             : "Customize variants for size, color, and more to cater to all your customers' preferences."}
                                     </p>
                                 </div>
+
                                 {openAccordion === 'variants' ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                             </button>
                             {openAccordion === 'variants' && (
@@ -660,19 +716,21 @@ const AddProduct = ({ onClose, onSave, categories = [], initialData = null }) =>
                                                             ) : (
                                                                 <div>
                                                                     <label className="text-[11px] font-bold text-gray-400 uppercase">
-                                                                        {category === 'Dry Fruits' ? 'Weight / Pack' : 'Option Name'}
+                                                                        Size
                                                                     </label>
                                                                     <input
                                                                         className="w-full bg-transparent border-b border-gray-300 focus:border-[#146eb4] outline-none text-[13px] py-1"
-                                                                        value={variant.name}
+                                                                        value={variant.size}
                                                                         onChange={(e) => {
                                                                             const newVariants = [...variants];
-                                                                            newVariants[index].name = e.target.value;
+                                                                            newVariants[index].size = e.target.value;
                                                                             setVariants(newVariants);
                                                                         }}
-                                                                        placeholder={category === 'Dry Fruits' ? "e.g. 500g, 1kg" : "e.g. Size / Color / Model"}
+                                                                        placeholder="e.g. 250g, 500g, XL"
                                                                     />
+
                                                                 </div>
+
                                                             )}
                                                             <div>
                                                                 <label className="text-[11px] font-bold text-gray-400 uppercase">Price</label>
@@ -708,7 +766,9 @@ const AddProduct = ({ onClose, onSave, categories = [], initialData = null }) =>
                                                                     />
                                                                 </div>
                                                             </div>
+
                                                             {(category === 'Clothing' || category === 'Apparels' || category === 'Accessories') && (
+
                                                                 <div>
                                                                     <label className="text-[11px] font-bold text-gray-400 uppercase">SKU</label>
                                                                     <input
@@ -814,32 +874,45 @@ const AddProduct = ({ onClose, onSave, categories = [], initialData = null }) =>
                                                             {/* Premium Variant Add Button */}
                                                             <div
                                                                 onClick={() => {
+                                                                    if (uploading) return;
                                                                     const input = document.createElement('input');
                                                                     input.type = 'file';
                                                                     input.accept = 'image/*,video/*';
                                                                     input.multiple = true;
-                                                                    input.onchange = (e) => {
+                                                                    input.onchange = async (e) => {
                                                                         const files = Array.from(e.target.files);
-                                                                        files.forEach(file => {
-                                                                            const reader = new FileReader();
-                                                                            reader.onload = (re) => {
+                                                                        setUploading(true);
+                                                                        try {
+                                                                            for (const file of files) {
                                                                                 const type = file.type.startsWith('video') ? 'video' : 'image';
+                                                                                const url = await uploadToGCS(file);
                                                                                 const nvs = [...variants];
                                                                                 if (!nvs[index].media) nvs[index].media = [];
-                                                                                nvs[index].media.push({ type, url: re.target.result });
-                                                                                if (!nvs[index].thumbnail && type === 'image') nvs[index].thumbnail = re.target.result;
-                                                                                if (!nvs[index].cover || !nvs[index].cover.url) nvs[index].cover = { type, url: re.target.result };
+                                                                                nvs[index].media.push({ type, url });
+                                                                                if (!nvs[index].thumbnail && type === 'image') nvs[index].thumbnail = url;
+                                                                                if (!nvs[index].cover || !nvs[index].cover.url) nvs[index].cover = { type, url };
                                                                                 setVariants(nvs);
-                                                                            };
-                                                                            reader.readAsDataURL(file);
-                                                                        });
+                                                                            }
+                                                                        } catch (err) {
+                                                                            alert('Image upload failed: ' + err.message);
+                                                                        } finally {
+                                                                            setUploading(false);
+                                                                        }
                                                                     };
                                                                     input.click();
                                                                 }}
-                                                                className="aspect-square border-2 border-dashed border-gray-200 rounded-xl flex flex-col items-center justify-center cursor-pointer hover:border-[#146eb4] hover:bg-blue-50 transition-all group bg-white shadow-sm"
+                                                                className={`aspect-square border-2 border-dashed rounded-xl flex flex-col items-center justify-center transition-all group bg-white shadow-sm ${uploading ? 'border-[#146eb4] bg-blue-50 cursor-wait' : 'border-gray-200 cursor-pointer hover:border-[#146eb4] hover:bg-blue-50'
+                                                                    }`}
                                                             >
                                                                 <div className="p-1.5 bg-gray-100 rounded-lg group-hover:bg-[#146eb4]/10 transition-colors">
-                                                                    <Plus size={16} className="text-gray-400 group-hover:text-[#146eb4]" />
+                                                                    {uploading ? (
+                                                                        <svg className="animate-spin w-4 h-4 text-[#146eb4]" fill="none" viewBox="0 0 24 24">
+                                                                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                                                                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                                                                        </svg>
+                                                                    ) : (
+                                                                        <Plus size={16} className="text-gray-400 group-hover:text-[#146eb4]" />
+                                                                    )}
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -848,11 +921,13 @@ const AddProduct = ({ onClose, onSave, categories = [], initialData = null }) =>
                                             </div>
                                         ))}
                                         <button
-                                            onClick={() => setVariants([...variants, { name: '', price: '', stock: '', sku: '' }])}
+                                            onClick={() => setVariants([...variants, { size: '', price: '', discountedPrice: '', stock: '', sku: '' }])}
                                             className="w-full py-3 border-2 border-dashed border-gray-200 rounded-lg text-[13px] text-gray-500 hover:border-[#146eb4] hover:text-[#146eb4] hover:bg-blue-50 transition-all font-medium flex items-center justify-center gap-2"
                                         >
-                                            <Plus size={16} /> Add variant
+                                            <Plus size={16} /> Add Size
                                         </button>
+
+
                                     </div>
                                 </div>
                             )}

@@ -4,7 +4,7 @@ import { ChevronRight, ChevronDown, ExternalLink, Wallet } from 'lucide-react';
 
 const Sidebar = ({ items, activeTab, onSelect }) => {
     return (
-        <aside className="w-64 h-full bg-[#1e2640] text-white flex flex-col shrink-0">
+        <aside className="w-64 h-full bg-[#1e2640] text-white flex flex-col shrink-0 no-print">
             {/* Header / Store Selector */}
             <div className="p-4">
                 <div className="flex items-center justify-between p-2 rounded-lg bg-white/10 hover:bg-white/15 cursor-pointer transition-colors">
@@ -60,18 +60,6 @@ const Sidebar = ({ items, activeTab, onSelect }) => {
                 ))}
             </nav>
 
-            {/* Bottom Profile / Credits */}
-            <div className="p-3">
-                <div className="bg-white/10 p-3 rounded-lg flex items-center gap-3">
-                    <div className="p-2 bg-white/10 rounded flex items-center justify-center">
-                        <Wallet size={18} className="text-white" />
-                    </div>
-                    <div className="flex-1">
-                        <p className="text-[10px] text-gray-400">Dukaan Credits</p>
-                        <p className="text-sm font-semibold text-white">142.2</p>
-                    </div>
-                </div>
-            </div>
         </aside>
     );
 };

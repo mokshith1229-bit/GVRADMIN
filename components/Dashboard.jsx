@@ -1,5 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import {
     AreaChart,
     Area,
@@ -10,6 +11,13 @@ import {
     ResponsiveContainer
 } from 'recharts';
 import { ChevronDown, Info } from 'lucide-react';
+import {
+    fetchDashboard,
+    selectDashboardData,
+    selectChartData,
+    selectOrdersChartData,
+    selectDashboardStatus,
+} from '../store/slices/dashboardSlice';
 
 const StatCard = ({
     title, value, count, variant = 'white'
@@ -29,54 +37,19 @@ const StatCard = ({
 );
 
 const Dashboard = () => {
-    const [dashboardData, setDashboardData] = useState(null);
-    const [chartData, setChartData] = useState([]);
-    const [ordersChartData, setOrdersChartData] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const dispatch = useDispatch();
+    const dashboardData = useSelector(selectDashboardData);
+    const chartData = useSelector(selectChartData);
+    const ordersChartData = useSelector(selectOrdersChartData);
+    const status = useSelector(selectDashboardStatus);
 
+    // Only fetch if not already loaded
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            try {
-                const response = await fetch('http://localhost:5000/dashboard');
-                const data = await response.json();
+        if (status === 'idle') {
+            dispatch(fetchDashboard());
+        }
+    }, [dispatch, status]);
 
-                setDashboardData(data);
-
-                // Process sales chart data
-                if (data.salesData && Array.isArray(data.salesData)) {
-                    const processedChartData = data.salesData.map(item => {
-                        const date = new Date(item._id);
-                        return {
-                            name: date.toLocaleDateString('en-US', { weekday: 'short' }), // e.g., "Mon"
-                            sales: item.totalSales || 0
-                        };
-                    });
-                    setChartData(processedChartData);
-                }
-
-                // Process orders chart data
-                if (data.ordersData && Array.isArray(data.ordersData)) {
-                    const processedOrdersData = data.ordersData.map(item => {
-                        const date = new Date(item._id);
-                        return {
-                            name: date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' }), // e.g., "Oct 5"
-                            orders: item.orderCount || 0
-                        };
-                    });
-                    setOrdersChartData(processedOrdersData);
-                }
-
-                setIsLoading(false);
-            } catch (error) {
-                console.error('Error fetching dashboard data:', error);
-                setIsLoading(false);
-            }
-        };
-
-        fetchDashboardData();
-    }, []);
-
-    // Format currency
     const formatCurrency = (amount) => {
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
@@ -85,11 +58,10 @@ const Dashboard = () => {
         }).format(amount || 0);
     };
 
-    if (isLoading) {
+    if (status === 'loading') {
         return <div className="p-8 text-center text-gray-500">Loading dashboard...</div>;
     }
 
-    // Default empty data if fetch failed or returned empty
     const stats = dashboardData || {
         pendingAmount: 0,
         processedAmount: 0,

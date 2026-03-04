@@ -1,5 +1,6 @@
 
-import React, { useState } from 'react';
+import React from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Orders from './components/Orders';
@@ -7,6 +8,9 @@ import Products from './components/Products';
 import Delivery from './components/Delivery';
 import Categories from './components/Categories';
 import Discounts from './components/Discounts';
+import Analytics from './components/Analytics';
+import Audience from './components/Audience';
+import Appearance from './components/Appearance';
 import {
     LayoutDashboard,
     ShoppingCart,
@@ -15,66 +19,50 @@ import {
     Percent,
     Users,
     Palette,
-    Settings,
-    HelpCircle,
-    Eye,
-    Share2,
-    MoreVertical,
     Truck
 } from 'lucide-react';
 
+// Redux imports
+import { selectActiveTab, setActiveTab, addCategory, deleteCategory, selectManualCategories } from './store/slices/appSlice';
+import { selectProducts, selectCategories, fetchProducts, toggleProductStatus } from './store/slices/productSlice';
+import { fetchOrders } from './store/slices/orderSlice';
+import { fetchDashboard } from './store/slices/dashboardSlice';
+import { fetchUsers } from './store/slices/userSlice';
+
 const App = () => {
-    const [activeTab, setActiveTab] = useState('dashboard');
-    const [products, setProducts] = useState([]);
+    const dispatch = useDispatch();
 
-    // Fetch products from backend
-    const fetchProducts = async () => {
-        try {
-            const response = await fetch('http://localhost:5000/products');
-            if (response.ok) {
-                const data = await response.json();
-                setProducts(data);
-            } else {
-                console.error('Failed to fetch products');
-            }
-        } catch (error) {
-            console.error('Error fetching products:', error);
-        }
-    };
+    // Global state from Redux
+    const activeTab = useSelector(selectActiveTab);
+    const products = useSelector(selectProducts);
+    const productCategories = useSelector(selectCategories);
+    const manualCategories = useSelector(selectManualCategories);
 
-    // Load products on mount
+    // Merge: product-derived categories take priority, manual ones fill the gap
+    const categories = products.length > 0 ? productCategories : manualCategories;
+
+    // Fetch all data on mount
     React.useEffect(() => {
-        fetchProducts();
-    }, []);
-
-    const [categories, setCategories] = useState([
-        'Dry fruits & nuts, Mixes & nuts',
-        'Spices',
-        'Dates',
-        'Seeds'
-    ]);
+        dispatch(fetchProducts());
+        dispatch(fetchOrders());
+        dispatch(fetchDashboard());
+        dispatch(fetchUsers());
+    }, [dispatch]);
 
     const handleAddCategory = (newCategory) => {
-        if (!categories.includes(newCategory)) {
-            setCategories([...categories, newCategory]);
-        }
+        dispatch(addCategory(newCategory));
     };
 
     const handleDeleteCategory = (categoryToDelete) => {
-        setCategories(categories.filter(cat => cat !== categoryToDelete));
+        dispatch(deleteCategory(categoryToDelete));
     };
 
     const handleToggleStatus = (productId) => {
-        setProducts(products.map(product =>
-            (product._id || product.id) === productId
-                ? { ...product, status: product.status === 'Active' ? 'Inactive' : 'Active' }
-                : product
-        ));
+        dispatch(toggleProductStatus(productId));
     };
 
-    // Called when a product is added successfully
     const handleRefreshProducts = () => {
-        fetchProducts();
+        dispatch(fetchProducts());
     };
 
     const navigation = [
@@ -86,7 +74,6 @@ const App = () => {
         { id: 'discounts', label: 'Discount', icon: <Percent size={20} /> },
         { id: 'audience', label: 'Audience', icon: <Users size={20} /> },
         { id: 'appearance', label: 'Appearance', icon: <Palette size={20} /> },
-        { id: 'settings', label: 'Settings', icon: <Settings size={20} /> },
     ];
 
     const renderContent = () => {
@@ -98,13 +85,30 @@ const App = () => {
             case 'delivery':
                 return <Delivery />;
             case 'products':
-                // Pass handleRefreshProducts as onRefresh
-                return <Products products={products} onRefresh={handleRefreshProducts} categories={categories} onToggleStatus={handleToggleStatus} />;
-
+                return (
+                    <Products
+                        onRefresh={handleRefreshProducts}
+                        categories={categories}
+                        onToggleStatus={handleToggleStatus}
+                    />
+                );
             case 'categories':
-                return <Categories categories={categories} onAddCategory={handleAddCategory} onDeleteCategory={handleDeleteCategory} onBack={() => setActiveTab('products')} />;
+                return (
+                    <Categories
+                        categories={categories}
+                        onAddCategory={handleAddCategory}
+                        onDeleteCategory={handleDeleteCategory}
+                        onBack={() => dispatch(setActiveTab('products'))}
+                    />
+                );
             case 'discounts':
                 return <Discounts />;
+            case 'analytics':
+                return <Analytics />;
+            case 'audience':
+                return <Audience />;
+            case 'appearance':
+                return <Appearance />;
             default:
                 return (
                     <div className="flex items-center justify-center h-full text-gray-400">
@@ -122,7 +126,7 @@ const App = () => {
             <Sidebar
                 items={navigation}
                 activeTab={activeTab}
-                onSelect={setActiveTab}
+                onSelect={(tab) => dispatch(setActiveTab(tab))}
             />
             <main className="flex-1 overflow-y-auto">
                 <div className="max-w-[1400px] mx-auto p-6 md:p-8">

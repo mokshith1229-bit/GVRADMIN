@@ -1,6 +1,10 @@
 
 import React, { useState, useRef, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { OrderStatus, PaymentStatus } from '../types';
+import { BASE_URL } from '../api';
+import OrderInvoice from './OrderInvoice';
+import { selectOrders, fetchOrders, updateOrderStatusAsync, updateOrder } from '../store/slices/orderSlice';
 import {
     Search,
     Download,
@@ -19,11 +23,14 @@ import {
     Clock,
     MoreVertical,
     SlidersHorizontal,
-    ArrowUpFromLine
+    ArrowUpFromLine,
+    Loader2
 } from 'lucide-react';
 
+
 const Orders = () => {
-    const [orders, setOrders] = useState([]);
+    const dispatch = useDispatch();
+    const orders = useSelector(selectOrders);
     const [activeTab, setActiveTab] = useState('All');
     const [search, setSearch] = useState('');
     const [showSortModal, setShowSortModal] = useState(false);
@@ -36,6 +43,8 @@ const Orders = () => {
     const [openStatusId, setOpenStatusId] = useState(null); // Track which order's status dropdown is open
     const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
     const [selectedOrder, setSelectedOrder] = useState(null);
+    const [processingOrderIds, setProcessingOrderIds] = useState([]);
+
 
     // Filter State
     const [filterPayment, setFilterPayment] = useState({ paid: false, cod: false, unpaid: false, prepaid: false });
@@ -64,50 +73,10 @@ const Orders = () => {
 
     const tabs = ['All', 'Pending', 'Accepted', 'Shipped', 'Delivered', 'Modified', 'Rejected', 'Failed', 'Returned', 'Cancelled'];
 
-    // Fetch orders from backend
+    // Fetch orders from Redux store
     useEffect(() => {
-        const fetchOrders = async () => {
-            try {
-                const response = await fetch('http://localhost:5000/orders');
-                if (response.ok) {
-                    const data = await response.json();
-
-                    // Map backend data to UI structure
-                    const mappedOrders = data.map(order => ({
-                        id: order._id,
-                        date: new Date(order.createdAt).toLocaleString('en-US', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric',
-                            hour: 'numeric',
-                            minute: 'numeric',
-                            hour12: true
-                        }),
-                        customer: order.customerName,
-                        itemsCount: order.totalItems || order.products?.length || 0,
-                        payment: order.paymentMethod,
-                        status: order.status,
-                        amount: order.totalAmount,
-                        shippingAddress: order.shippingAddress,
-                        billingAddress: order.billingAddress,
-                        phone: order.customerPhone,
-                        products: order.products || []
-                    }));
-
-                    // Sort by newest first by default
-                    mappedOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                    setOrders(mappedOrders);
-                } else {
-                    console.error('Failed to fetch orders');
-                }
-            } catch (error) {
-                console.error('Error fetching orders:', error);
-            }
-        };
-
-        fetchOrders();
-    }, []);
+        dispatch(fetchOrders());
+    }, [dispatch]);
 
     const renderStatus = (status) => {
         const baseStyle = "inline-flex items-center justify-center px-3 py-1 rounded text-[10px] font-bold tracking-widest uppercase";
@@ -182,22 +151,54 @@ const Orders = () => {
     }, [openStatusId]);
 
     const filteredOrders = orders.filter(order => {
-        if (activeTab === 'All') return true;
-        if (activeTab === 'Cancelled') {
-            return order.status === 'Cancelled' || order.status === 'Cancelled by Buyer';
-        }
-        return order.status === activeTab;
+        // Tab filtering
+        const matchesTab = activeTab === 'All'
+            ? true
+            : activeTab === 'Cancelled'
+                ? (order.status === 'Cancelled' || order.status === 'Cancelled by Buyer')
+                : order.status === activeTab;
+
+        // Search filtering
+        const searchTerm = search.toLowerCase();
+        const matchesSearch =
+            order.id.toLowerCase().includes(searchTerm) ||
+            order.customer.toLowerCase().includes(searchTerm) ||
+            (order.phone && order.phone.toLowerCase().includes(searchTerm));
+
+        return matchesTab && matchesSearch;
     });
 
+    const handleProcessOrder = async (orderId) => {
+        setProcessingOrderIds(prev => [...prev, orderId]);
+        try {
+            const response = await fetch(`${BASE_URL}/admin/process-order/${orderId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            const data = await response.json();
+            if (response.ok) {
+                dispatch(updateOrder(data.order));
+                // Optional: show a better toast here
+                alert('Order processed successfully!');
+            } else {
+                alert(`Error: ${data.message || 'Failed to process order'}`);
+            }
+        } catch (error) {
+            console.error('Process order error:', error);
+            alert('An unexpected error occurred while processing the order.');
+        } finally {
+            setProcessingOrderIds(prev => prev.filter(id => id !== orderId));
+        }
+    };
+
+
     const handleStatusChange = (orderId, newStatus) => {
-        setOrders(prevOrders => prevOrders.map(order =>
-            order.id === orderId ? { ...order, status: newStatus } : order
-        ));
+        dispatch(updateOrderStatusAsync({ orderId, newStatus }));
         setOpenStatusId(null);
     };
 
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 no-print">
             {/* Action Header */}
             <div className="flex flex-col gap-4">
                 <div className="flex flex-wrap items-center justify-between gap-4">
@@ -513,7 +514,9 @@ const Orders = () => {
                                     <th className="px-4 py-4 border-b border-gray-100">ITEMS</th>
                                     <th className="px-4 py-4 border-b border-gray-100">PAYMENT</th>
                                     <th className="px-4 py-4 border-b border-gray-100">STATUS</th>
+                                    <th className="px-4 py-4 border-b border-gray-100">ACTIONS</th>
                                     <th className="px-4 py-4 border-b border-gray-100 text-right">AMOUNT</th>
+
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-50">
@@ -586,7 +589,39 @@ const Orders = () => {
                                                     </div>
                                                 )}
                                             </td>
+                                            <td className="px-4 py-4">
+                                                {/* Process Order Button logic */}
+                                                {order.status === 'Pending' &&
+                                                    (order.paymentStatus === 'Paid' || order.paymentStatus === 'Accepted' ||
+                                                        order.payment?.toUpperCase() === 'COD') ? (
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            handleProcessOrder(order.id);
+                                                        }}
+                                                        disabled={processingOrderIds.includes(order.id)}
+                                                        className={`flex items-center gap-2 px-3 py-1.5 rounded text-[10px] font-bold uppercase transition-all ${processingOrderIds.includes(order.id)
+                                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed border border-gray-200'
+                                                            : 'bg-[#146eb4] text-white hover:bg-[#115a95] shadow-sm'
+                                                            }`}
+                                                    >
+                                                        {processingOrderIds.includes(order.id) ? (
+                                                            <>
+                                                                <Loader2 size={12} className="animate-spin" />
+                                                                Processing...
+                                                            </>
+                                                        ) : (
+                                                            'Process Order'
+                                                        )}
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-gray-400 text-[10px] font-medium uppercase tracking-wider">
+                                                        {order.status === 'Packed' ? 'Completed' : 'N/A'}
+                                                    </span>
+                                                )}
+                                            </td>
                                             <td className="px-4 py-4 text-right font-bold text-gray-900">
+
                                                 ₹{order.amount ? order.amount.toLocaleString() : '0'}
                                             </td>
                                         </tr>
@@ -676,8 +711,8 @@ const Orders = () => {
                                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Shipping Address</h3>
                                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
                                         <p className="text-sm text-gray-800 leading-relaxed">
-                                            {selectedOrder.shippingAddress?.address}<br />
-                                            {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.postalCode}
+                                            {selectedOrder.shippingAddress?.line1}<br />
+                                            {selectedOrder.shippingAddress?.city}, {selectedOrder.shippingAddress?.state} - {selectedOrder.shippingAddress?.pincode}
                                         </p>
                                     </div>
                                 </div>
@@ -685,12 +720,12 @@ const Orders = () => {
                                 <div className="space-y-3">
                                     <h3 className="text-xs font-bold text-gray-400 uppercase tracking-widest">Billing Address</h3>
                                     <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                        {selectedOrder.billingAddress?.address === selectedOrder.shippingAddress?.address ? (
+                                        {selectedOrder.billingAddress?.line1 === selectedOrder.shippingAddress?.line1 ? (
                                             <p className="text-xs text-gray-500 italic">Same as shipping</p>
                                         ) : (
                                             <p className="text-sm text-gray-800 leading-relaxed">
-                                                {selectedOrder.billingAddress?.address}<br />
-                                                {selectedOrder.billingAddress?.city}, {selectedOrder.billingAddress?.postalCode}
+                                                {selectedOrder.billingAddress?.line1}<br />
+                                                {selectedOrder.billingAddress?.city}, {selectedOrder.billingAddress?.state} - {selectedOrder.billingAddress?.pincode}
                                             </p>
                                         )}
                                     </div>
@@ -759,6 +794,11 @@ const Orders = () => {
                             >
                                 Print Invoice
                             </button>
+                        </div>
+
+                        {/* Hidden Invoice for Printing */}
+                        <div className="absolute opacity-0 pointer-events-none print:relative print:opacity-100 print:pointer-events-auto">
+                            <OrderInvoice order={selectedOrder} />
                         </div>
                     </div>
                 </div>

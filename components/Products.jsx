@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { useSelector } from 'react-redux';
+import { selectProducts } from '../store/slices/productSlice';
 import AddProduct from './AddProduct';
 import {
     Search,
@@ -18,18 +20,30 @@ import {
     Share2
 } from 'lucide-react';
 
-const Products = ({ products, onRefresh, categories, onToggleStatus }) => {
+const Products = ({ onRefresh, categories, onToggleStatus }) => {
+    const products = useSelector(selectProducts);
     const [showAddModal, setShowAddModal] = useState(false);
     const [search, setSearch] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
+    const [selectedCategory, setSelectedCategory] = useState('All');
     const itemsPerPage = 8;
 
     const [editingProduct, setEditingProduct] = useState(null);
 
-    const filteredProducts = products.filter(product =>
-        product.name.toLowerCase().includes(search.toLowerCase()) ||
-        product.category.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredProducts = products.filter(product => {
+        const matchesSearch =
+            product.name.toLowerCase().includes(search.toLowerCase()) ||
+            product.category.toLowerCase().includes(search.toLowerCase());
+        const matchesCategory =
+            selectedCategory === 'All' || product.category === selectedCategory;
+        return matchesSearch && matchesCategory;
+    });
+
+    // Count products per category for badge display
+    const categoryCount = (cat) =>
+        cat === 'All'
+            ? products.length
+            : products.filter(p => p.category === cat).length;
 
     const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
     const paginatedProducts = filteredProducts.slice(
@@ -43,6 +57,11 @@ const Products = ({ products, onRefresh, categories, onToggleStatus }) => {
 
     const handleNext = () => {
         if (currentPage < totalPages) setCurrentPage(currentPage + 1);
+    };
+
+    const handleCategorySelect = (cat) => {
+        setSelectedCategory(cat);
+        setCurrentPage(1);
     };
 
     const handleProductSaved = () => {
@@ -108,16 +127,38 @@ const Products = ({ products, onRefresh, categories, onToggleStatus }) => {
                     </div>
                 </div>
 
-                {/* Sort and Filter buttons */}
-                <div className="flex justify-end gap-3 pt-2">
-                    <button className="flex items-center gap-2 px-3 py-1.5 border rounded text-xs text-gray-600 hover:bg-gray-50 bg-white shadow-sm">
-                        <ArrowUpDown size={14} className="text-gray-400" />
-                        Sort by
-                    </button>
-                    <button className="flex items-center gap-2 px-3 py-1.5 border rounded text-xs text-gray-600 hover:bg-gray-50 bg-white shadow-sm">
-                        <Filter size={14} className="text-gray-400" />
-                        Filter
-                    </button>
+                {/* Category Filter Pills */}
+                <div className="flex items-center gap-2 flex-wrap pt-1">
+                    {['All', ...(categories || [])].map((cat) => (
+                        <button
+                            key={cat}
+                            onClick={() => handleCategorySelect(cat)}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${selectedCategory === cat
+                                ? 'bg-[#146eb4] text-white border-[#146eb4] shadow-sm'
+                                : 'bg-white text-gray-600 border-gray-200 hover:border-[#146eb4] hover:text-[#146eb4]'
+                                }`}
+                        >
+                            {cat}
+                            <span
+                                className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold ${selectedCategory === cat
+                                    ? 'bg-white/25 text-white'
+                                    : 'bg-gray-100 text-gray-500'
+                                    }`}
+                            >
+                                {categoryCount(cat)}
+                            </span>
+                        </button>
+                    ))}
+                    <div className="ml-auto flex items-center gap-2">
+                        <button className="flex items-center gap-2 px-3 py-1.5 border rounded text-xs text-gray-600 hover:bg-gray-50 bg-white shadow-sm">
+                            <ArrowUpDown size={14} className="text-gray-400" />
+                            Sort by
+                        </button>
+                        <button className="flex items-center gap-2 px-3 py-1.5 border rounded text-xs text-gray-600 hover:bg-gray-50 bg-white shadow-sm">
+                            <Filter size={14} className="text-gray-400" />
+                            Filter
+                        </button>
+                    </div>
                 </div>
 
                 {/* Table Area */}
@@ -186,7 +227,9 @@ const Products = ({ products, onRefresh, categories, onToggleStatus }) => {
                                 ) : (
                                     <tr>
                                         <td colSpan="6" className="px-4 py-8 text-center text-gray-500">
-                                            No products found matching "{search}"
+                                            {selectedCategory !== 'All'
+                                                ? `No products found in "${selectedCategory}"${search ? ` matching "${search}"` : ''}`
+                                                : `No products found matching "${search}"`}
                                         </td>
                                     </tr>
                                 )}
