@@ -19,6 +19,7 @@ import {
     Eye,
     Share2
 } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 const Products = ({ onRefresh, categories, onToggleStatus }) => {
     const products = useSelector(selectProducts);
@@ -99,9 +100,9 @@ const Products = ({ onRefresh, categories, onToggleStatus }) => {
 
 
             {/* Filter and Search Bar Area */}
-            <div className="p-8 space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="relative w-full max-w-2xl">
+            <div className="p-4 md:p-8 space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="relative w-full sm:max-w-2xl">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                         <input
                             type="text"
@@ -111,54 +112,54 @@ const Products = ({ onRefresh, categories, onToggleStatus }) => {
                             onChange={(e) => setSearch(e.target.value)}
                         />
                     </div>
-                    <div className="flex items-center gap-2">
-                        <div className="flex items-center">
-                            <button
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <motion.div
+                            className="flex items-center w-full sm:w-auto"
+                            whileHover={{ scale: 1.02 }}
+                        >
+                            <motion.button
+                                whileTap={{ scale: 0.98 }}
                                 onClick={handleAddNewClick}
-                                className="flex items-center gap-2 pl-4 pr-3 py-2 bg-[#146eb4] text-white rounded-l-md text-sm font-medium hover:bg-[#115a95] transition-all"
+                                className="flex-1 sm:flex-none flex items-center justify-center gap-2 pl-4 pr-3 py-2 bg-[#146eb4] text-white rounded-l-md text-sm font-medium hover:bg-[#115a95] transition-all"
                             >
                                 <Plus size={18} />
-                                Add new product
-                            </button>
-                            <button className="px-2 py-2 bg-[#146eb4] text-white border-l border-[#ffffff33] rounded-r-md hover:bg-[#115a95]">
+                                <span className="sm:inline">Add new</span>
+                            </motion.button>
+                            <motion.button
+                                whileTap={{ scale: 0.98 }}
+                                className="px-2 py-2 bg-[#146eb4] text-white border-l border-[#ffffff33] rounded-r-md hover:bg-[#115a95]"
+                            >
                                 <ChevronDown size={18} />
-                            </button>
-                        </div>
+                            </motion.button>
+                        </motion.div>
                     </div>
                 </div>
 
                 {/* Category Filter Pills */}
-                <div className="flex items-center gap-2 flex-wrap pt-1">
+                <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
                     {['All', ...(categories || [])].map((cat) => (
-                        <button
+                        <motion.button
                             key={cat}
                             onClick={() => handleCategorySelect(cat)}
-                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${selectedCategory === cat
+                            whileHover={{ y: -2 }}
+                            whileTap={{ scale: 0.95 }}
+                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all whitespace-nowrap ${selectedCategory === cat
                                 ? 'bg-[#146eb4] text-white border-[#146eb4] shadow-sm'
                                 : 'bg-white text-gray-600 border-gray-200 hover:border-[#146eb4] hover:text-[#146eb4]'
                                 }`}
                         >
                             {cat}
-                            <span
+                            <motion.span
+                                animate={{ scale: selectedCategory === cat ? 1.1 : 1 }}
                                 className={`inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-semibold ${selectedCategory === cat
                                     ? 'bg-white/25 text-white'
                                     : 'bg-gray-100 text-gray-500'
                                     }`}
                             >
                                 {categoryCount(cat)}
-                            </span>
-                        </button>
+                            </motion.span>
+                        </motion.button>
                     ))}
-                    <div className="ml-auto flex items-center gap-2">
-                        <button className="flex items-center gap-2 px-3 py-1.5 border rounded text-xs text-gray-600 hover:bg-gray-50 bg-white shadow-sm">
-                            <ArrowUpDown size={14} className="text-gray-400" />
-                            Sort by
-                        </button>
-                        <button className="flex items-center gap-2 px-3 py-1.5 border rounded text-xs text-gray-600 hover:bg-gray-50 bg-white shadow-sm">
-                            <Filter size={14} className="text-gray-400" />
-                            Filter
-                        </button>
-                    </div>
                 </div>
 
                 {/* Table Area */}

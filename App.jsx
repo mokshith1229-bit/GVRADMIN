@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { motion, AnimatePresence } from 'framer-motion';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
 import Orders from './components/Orders';
@@ -19,7 +19,9 @@ import {
     Percent,
     Users,
     Palette,
-    Truck
+    Truck,
+    Menu,
+    X
 } from 'lucide-react';
 
 // Redux imports
@@ -34,12 +36,13 @@ const App = () => {
 
     // Global state from Redux
     const activeTab = useSelector(selectActiveTab);
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = React.useState(false);
     const products = useSelector(selectProducts);
     const productCategories = useSelector(selectCategories);
     const manualCategories = useSelector(selectManualCategories);
 
-    // Merge: product-derived categories take priority, manual ones fill the gap
-    const categories = products.length > 0 ? productCategories : manualCategories;
+    // Merge product-derived categories with manually added ones (deduplicated)
+    const categories = [...new Set([...productCategories, ...manualCategories])];
 
     // Fetch all data on mount
     React.useEffect(() => {
@@ -126,11 +129,44 @@ const App = () => {
             <Sidebar
                 items={navigation}
                 activeTab={activeTab}
-                onSelect={(tab) => dispatch(setActiveTab(tab))}
+                onSelect={(tab) => {
+                    dispatch(setActiveTab(tab));
+                    setIsMobileSidebarOpen(false); // Close sidebar on selection (mobile)
+                }}
+                isOpen={isMobileSidebarOpen}
+                onClose={() => setIsMobileSidebarOpen(false)}
             />
-            <main className="flex-1 overflow-y-auto">
-                <div className="max-w-[1400px] mx-auto p-6 md:p-8">
-                    {renderContent()}
+            <main className="flex-1 overflow-y-auto relative">
+                {/* Mobile Header */}
+                <div className="md:hidden sticky top-0 z-30 flex items-center justify-between bg-[#1e2640] text-white px-4 py-3 shadow-md">
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setIsMobileSidebarOpen(true)}
+                            className="p-1 hover:bg-white/10 rounded-md transition-colors"
+                        >
+                            <Menu size={24} />
+                        </button>
+                        <h1 className="text-sm font-bold tracking-wide uppercase">
+                            {navigation.find(n => n.id === activeTab)?.label || 'Omni Admin'}
+                        </h1>
+                    </div>
+                    <div className="w-8 h-8 bg-white/10 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold">G</span>
+                    </div>
+                </div>
+
+                <div className="max-w-[1400px] mx-auto p-4 md:p-8">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -10 }}
+                            transition={{ duration: 0.3 }}
+                        >
+                            {renderContent()}
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </main>
         </div>

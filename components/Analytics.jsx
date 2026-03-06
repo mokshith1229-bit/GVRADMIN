@@ -102,8 +102,8 @@ const Analytics = () => {
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Analytics Dashboard</h1>
-                    <p className="text-gray-500 mt-1">Real-time business performance and customer insights.</p>
+                    <h1 className="text-2xl md:text-3xl font-extrabold text-gray-900 tracking-tight">Analytics Dashboard</h1>
+                    <p className="text-xs md:text-gray-500 mt-1">Real-time business performance and customer insights.</p>
                 </div>
                 <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100">
                     <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
@@ -348,28 +348,43 @@ const Analytics = () => {
 };
 
 /* Helper Components */
+import { motion } from 'framer-motion';
+
 const SummaryCard = ({ title, value, icon, trend, trendUp }) => (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+    <motion.div
+        whileHover={{
+            y: -5,
+            boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+        }}
+        transition={{ duration: 0.2 }}
+        className="bg-white p-4 md:p-6 rounded-2xl shadow-sm border border-gray-100 cursor-default transition-shadow"
+    >
         <div className="flex items-center justify-between mb-4">
-            <div className="p-2.5 bg-gray-50 rounded-xl">
-                {icon}
+            <div className="p-2 bg-gray-50 rounded-xl">
+                {React.cloneElement(icon, { size: 18 })}
             </div>
             {trend && (
-                <div className={`flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-full ${trendUp ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
-                    {trendUp ? <ArrowUpRight size={14} /> : <ArrowDownRight size={14} />}
+                <div className={`flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full ${trendUp ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                    {trendUp ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
                     {trend}
                 </div>
             )}
         </div>
-        <div className="text-sm font-medium text-gray-500 mb-1">{title}</div>
-        <div className="text-2xl font-black text-gray-900">{value}</div>
-    </div>
+        <div className="text-xs font-medium text-gray-500 mb-1">{title}</div>
+        <div className="text-xl md:text-2xl font-black text-gray-900">{value}</div>
+    </motion.div>
 );
 
 const CustomerStatRow = ({ label, value, color, onClick, subtext }) => (
-    <div
+    <motion.div
         onClick={onClick}
-        className={`flex items-center gap-5 p-4 rounded-2xl transition-all duration-300 ${onClick ? 'cursor-pointer bg-white border border-gray-100 hover:border-[#146eb4] hover:shadow-lg hover:shadow-blue-50/20 group' : 'bg-gray-50/50 border border-transparent'}`}
+        whileHover={onClick ? {
+            scale: 1.02,
+            borderColor: "#146eb4",
+            boxShadow: "0 10px 20px rgba(20,110,180,0.1)"
+        } : {}}
+        whileTap={onClick ? { scale: 0.98 } : {}}
+        className={`flex items-center gap-5 p-4 rounded-2xl transition-all duration-300 ${onClick ? 'cursor-pointer bg-white border border-gray-100 group' : 'bg-gray-50/50 border border-transparent'}`}
     >
         <div className={`w-3.5 h-3.5 rounded-full ${color}`}></div>
         <div className="flex-1">
@@ -380,18 +395,24 @@ const CustomerStatRow = ({ label, value, color, onClick, subtext }) => (
             <div className="text-lg font-black text-gray-900 font-mono">{value}</div>
             {onClick && <ChevronRight size={18} className="text-gray-300 group-hover:text-[#146eb4] group-hover:translate-x-1 transition-all" />}
         </div>
-    </div>
+    </motion.div>
 );
 
 const StatusPill = ({ label, count, color }) => (
-    <div className={`${color} p-4 rounded-xl flex flex-col items-center justify-center border border-current opacity-90`}>
+    <motion.div
+        whileHover={{ scale: 1.05, filter: "brightness(1.05)" }}
+        className={`${color} p-4 rounded-xl flex flex-col items-center justify-center border border-current opacity-90 cursor-default`}
+    >
         <span className="text-xl font-black">{count}</span>
         <span className="text-[10px] font-bold uppercase tracking-widest mt-1">{label}</span>
-    </div>
+    </motion.div>
 );
 
 const ShippingMetric = ({ label, value, icon, color }) => (
-    <div className="flex items-start gap-3">
+    <motion.div
+        whileHover={{ x: 5 }}
+        className="flex items-start gap-3 cursor-default"
+    >
         <div className={`p-2 rounded-lg bg-gray-50 ${color}`}>
             {icon}
         </div>
@@ -399,7 +420,7 @@ const ShippingMetric = ({ label, value, icon, color }) => (
             <div className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter mb-0.5">{label}</div>
             <div className="text-lg font-black text-gray-900 tracking-tight">{value}</div>
         </div>
-    </div>
+    </motion.div>
 );
 
 export default Analytics;

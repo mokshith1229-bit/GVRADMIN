@@ -19,10 +19,20 @@ import {
     selectDashboardStatus,
 } from '../store/slices/dashboardSlice';
 
+import { motion } from 'framer-motion';
+
 const StatCard = ({
     title, value, count, variant = 'white'
 }) => (
-    <div className={`p-5 rounded-lg shadow-sm ${variant === 'blue' ? 'bg-[#146eb4] text-white' : 'bg-white border text-gray-900'}`}>
+    <motion.div
+        whileHover={{
+            y: -5,
+            boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
+            borderColor: variant === 'blue' ? '#146eb4' : '#e5e7eb'
+        }}
+        transition={{ duration: 0.2 }}
+        className={`p-5 rounded-lg shadow-sm cursor-default border transition-colors ${variant === 'blue' ? 'bg-[#146eb4] text-white border-[#146eb4]' : 'bg-white border-gray-200 text-gray-900'}`}
+    >
         <div className="flex items-center gap-2 mb-4">
             <span className="text-sm font-medium opacity-80">{title}</span>
             <Info size={14} className="opacity-60" />
@@ -33,7 +43,7 @@ const StatCard = ({
                 <span className="text-sm underline cursor-pointer">{count} orders &rarr;</span>
             )}
         </div>
-    </div>
+    </motion.div>
 );
 
 const Dashboard = () => {
@@ -72,9 +82,9 @@ const Dashboard = () => {
 
     return (
         <div className="space-y-8">
-            <header className="flex items-center justify-between">
+            <header className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h1 className="text-xl font-semibold">Overview</h1>
-                <button className="flex items-center gap-2 px-4 py-2 bg-white border rounded text-sm text-gray-600 hover:bg-gray-50">
+                <button className="flex items-center justify-center gap-2 px-4 py-2 bg-white border rounded text-sm text-gray-600 hover:bg-gray-50 w-full sm:w-auto">
                     Last 30 days
                     <ChevronDown size={16} />
                 </button>
@@ -110,7 +120,7 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                <div className="h-80 w-full">
+                <div className="h-64 sm:h-80 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={chartData.length > 0 ? chartData : [{ name: 'No Data', sales: 0 }]}>
                             <defs>
@@ -120,8 +130,8 @@ const Dashboard = () => {
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} dy={10} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} />
                             <Tooltip
                                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                                 formatter={(value) => formatCurrency(value)}
@@ -151,7 +161,7 @@ const Dashboard = () => {
                     </div>
                 </div>
 
-                <div className="h-80 w-full">
+                <div className="h-64 sm:h-80 w-full">
                     <ResponsiveContainer width="100%" height="100%">
                         <AreaChart data={ordersChartData.length > 0 ? ordersChartData : [{ name: 'No Data', orders: 0 }]}>
                             <defs>
@@ -161,8 +171,8 @@ const Dashboard = () => {
                                 </linearGradient>
                             </defs>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} dy={10} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 12 }} />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} dy={10} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fill: '#9ca3af', fontSize: 10 }} />
                             <Tooltip
                                 contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                             />

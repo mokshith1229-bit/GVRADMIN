@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Users, MoreVertical, Calendar, ShoppingBag, CreditCard, ChevronLeft, ChevronRight, ArrowUpDown } from 'lucide-react';
+import { Search, Users, MoreVertical, Calendar, ShoppingBag, CreditCard, ChevronLeft, ChevronRight, ArrowUpDown, RefreshCcw } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { BASE_URL } from '../api';
 
 const Audience = () => {
@@ -66,7 +67,13 @@ const Audience = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-64">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#146eb4]"></div>
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+                    className="text-[#146eb4]"
+                >
+                    <RefreshCcw size={32} />
+                </motion.div>
             </div>
         );
     }
@@ -89,10 +96,13 @@ const Audience = () => {
                     </h1>
                     <p className="text-sm text-gray-500 mt-1">Manage your customers and view their purchase history.</p>
                 </div>
-                <div className="bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-2">
+                <motion.div
+                    whileHover={{ scale: 1.05 }}
+                    className="bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-2"
+                >
                     <span className="text-sm font-medium text-gray-600">Total Customers:</span>
                     <span className="text-lg font-bold text-[#146eb4]">{customers.length}</span>
-                </div>
+                </motion.div>
             </div>
 
             <div className="bg-white border border-gray-100 rounded-lg shadow-sm">
@@ -110,13 +120,15 @@ const Audience = () => {
                             }}
                         />
                     </div>
-                    <button
+                    <motion.button
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
                         onClick={() => setSortOrder(prev => prev === 'desc' ? 'asc' : 'desc')}
                         className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-gray-50 border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors"
                     >
                         <ArrowUpDown size={16} />
                         Sort by Orders ({sortOrder === 'desc' ? 'High to Low' : 'Low to High'})
-                    </button>
+                    </motion.button>
                 </div>
 
                 <div className="overflow-x-auto">
@@ -134,7 +146,11 @@ const Audience = () => {
                         <tbody className="divide-y divide-gray-50">
                             {currentItems.length > 0 ? (
                                 currentItems.map((customer) => (
-                                    <tr key={customer.user_id} className="hover:bg-gray-50/50 transition-colors">
+                                    <motion.tr
+                                        key={customer.user_id}
+                                        whileHover={{ backgroundColor: "rgba(249, 250, 251, 0.5)" }}
+                                        className="transition-colors"
+                                    >
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center text-[#146eb4] font-bold text-lg">
@@ -175,7 +191,7 @@ const Audience = () => {
                                                 <MoreVertical size={18} />
                                             </button>
                                         </td>
-                                    </tr>
+                                    </motion.tr>
                                 ))
                             ) : (
                                 <tr>
@@ -210,8 +226,8 @@ const Audience = () => {
                                     key={i + 1}
                                     onClick={() => setCurrentPage(i + 1)}
                                     className={`w-10 h-10 rounded-lg text-sm font-medium transition-colors ${currentPage === i + 1
-                                            ? 'bg-[#146eb4] text-white'
-                                            : 'text-gray-600 hover:bg-gray-50 border border-gray-200'
+                                        ? 'bg-[#146eb4] text-white'
+                                        : 'text-gray-600 hover:bg-gray-50 border border-gray-200'
                                         }`}
                                 >
                                     {i + 1}

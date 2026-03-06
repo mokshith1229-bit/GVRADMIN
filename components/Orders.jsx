@@ -26,6 +26,7 @@ import {
     ArrowUpFromLine,
     Loader2
 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 
 const Orders = () => {
@@ -204,263 +205,274 @@ const Orders = () => {
                 <div className="flex flex-wrap items-center justify-between gap-4">
                     <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
                         {tabs.map((tab) => (
-                            <button
+                            <motion.button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
+                                whileHover={{ y: -2 }}
+                                whileTap={{ scale: 0.95 }}
                                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors whitespace-nowrap ${activeTab === tab
                                     ? 'bg-[#146eb4] text-white shadow-sm'
                                     : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                                     }`}
                             >
                                 {tab} {tab === 'All' ? orders.length : tab === 'Delivered' ? orders.filter(o => o.status === 'Delivered').length : ''}
-                            </button>
+                            </motion.button>
                         ))}
                     </div>
                     <div className="flex items-center gap-3">
-                        <button className="flex items-center gap-2 px-4 py-2 text-[#146eb4] border border-[#146eb4] rounded text-sm font-medium hover:bg-blue-50">
-                            <div className="w-5 h-5 flex items-center justify-center border border-current rounded-sm">
-                                <div className="w-3 h-0.5 bg-current transform rotate-45 translate-y-0.5"></div>
-                                <div className="w-3 h-0.5 bg-current transform -rotate-45 -translate-y-0.5"></div>
-                            </div>
-                            Bulk ship
-                        </button>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-[#146eb4] text-white rounded text-sm font-medium hover:bg-[#115a95] shadow-sm">
-                            <Plus size={18} />
-                            Create order
-                        </button>
+                        {/* Removed Bulk ship and Create order buttons */}
                     </div>
                 </div>
 
                 {/* Table/Filter Area */}
                 <div className="bg-white border border-gray-100 rounded-lg shadow-sm overflow-visible">
                     {/* New Filter Bar matching screenshot */}
-                    <div className="p-4 flex flex-wrap items-center justify-between gap-4 border-b bg-white">
-                        <div className="relative w-full md:w-80">
+                    <div className="p-3 md:p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b bg-white">
+                        <div className="relative w-full sm:w-80">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                             <input
                                 type="text"
-                                placeholder="Order ID, phone or a name..."
+                                placeholder="Search..."
                                 className="w-full pl-9 pr-4 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:ring-1 focus:ring-blue-100 placeholder:text-gray-400"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                             />
                         </div>
 
-                        <div className="flex items-center gap-2">
-                            <button
+                        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide py-1">
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => setShowExportModal(true)}
                                 className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded text-sm text-gray-700 hover:bg-gray-50 font-medium"
                             >
                                 <ArrowUpFromLine size={16} className="text-gray-500" />
                                 Export
-                            </button>
-
-                            <button className="flex items-center gap-2 px-3 py-1.5 border border-gray-200 rounded text-sm text-gray-700 hover:bg-gray-50 font-medium">
-                                <SlidersHorizontal size={16} className="text-gray-500" />
-                                Columns
-                            </button>
+                            </motion.button>
 
                             <div className="relative" ref={sortRef}>
-                                <button
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                     onClick={() => setShowSortModal(!showSortModal)}
                                     className={`flex items-center gap-2 px-3 py-1.5 border rounded text-sm font-medium transition-colors ${showSortModal ? 'bg-blue-50 border-blue-200 text-[#146eb4]' : 'border-gray-200 text-gray-700 hover:bg-gray-50'
                                         }`}
                                 >
                                     <ArrowUpDown size={16} className={showSortModal ? 'text-[#146eb4]' : 'text-gray-500'} />
                                     Sort by
-                                </button>
+                                </motion.button>
 
-                                {showSortModal && (
-                                    <div className="absolute top-full right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-100 z-50 py-2">
-                                        <div className="pb-2 border-b border-gray-100">
-                                            {['Order (Created date)', 'Order (Modified date)'].map((option) => (
-                                                <button
-                                                    key={option}
-                                                    onClick={() => setSortDateType(option)}
-                                                    className="w-full px-4 py-2 flex items-center gap-3 hover:bg-gray-50 text-sm text-gray-700"
-                                                >
-                                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${sortDateType === option ? 'border-[#146eb4]' : 'border-gray-300'
-                                                        }`}>
-                                                        {sortDateType === option && (
-                                                            <div className="w-2 h-2 rounded-full bg-[#146eb4]"></div>
-                                                        )}
-                                                    </div>
-                                                    {option}
-                                                </button>
-                                            ))}
-                                        </div>
-                                        <div className="pt-2">
-                                            {['Date (Newest first)', 'Date (Oldest first)', 'Items (High to low)', 'Items (Low to high)', 'Amount (High to low)', 'Amount (Low to high)'].map((option) => (
-                                                <button
-                                                    key={option}
-                                                    onClick={() => setSortOrder(option)}
-                                                    className="w-full px-4 py-2 flex items-center gap-3 hover:bg-gray-50 text-sm text-gray-700"
-                                                >
-                                                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${sortOrder === option ? 'border-[#146eb4]' : 'border-gray-300'
-                                                        }`}>
-                                                        {sortOrder === option && (
-                                                            <div className="w-2 h-2 rounded-full bg-[#146eb4]"></div>
-                                                        )}
-                                                    </div>
-                                                    {option}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    </div>
-                                )}
+                                <AnimatePresence>
+                                    {showSortModal && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="absolute top-full right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-100 z-50 py-2 origin-top-right"
+                                        >
+                                            <div className="pb-2 border-b border-gray-100">
+                                                {['Order (Created date)', 'Order (Modified date)'].map((option) => (
+                                                    <button
+                                                        key={option}
+                                                        onClick={() => setSortDateType(option)}
+                                                        className="w-full px-4 py-2 flex items-center gap-3 hover:bg-gray-50 text-sm text-gray-700"
+                                                    >
+                                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${sortDateType === option ? 'border-[#146eb4]' : 'border-gray-300'
+                                                            }`}>
+                                                            {sortDateType === option && (
+                                                                <div className="w-2 h-2 rounded-full bg-[#146eb4]"></div>
+                                                            )}
+                                                        </div>
+                                                        {option}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <div className="pt-2">
+                                                {['Date (Newest first)', 'Date (Oldest first)', 'Items (High to low)', 'Items (Low to high)', 'Amount (High to low)', 'Amount (Low to high)'].map((option) => (
+                                                    <button
+                                                        key={option}
+                                                        onClick={() => setSortOrder(option)}
+                                                        className="w-full px-4 py-2 flex items-center gap-3 hover:bg-gray-50 text-sm text-gray-700"
+                                                    >
+                                                        <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${sortOrder === option ? 'border-[#146eb4]' : 'border-gray-300'
+                                                            }`}>
+                                                            {sortOrder === option && (
+                                                                <div className="w-2 h-2 rounded-full bg-[#146eb4]"></div>
+                                                            )}
+                                                        </div>
+                                                        {option}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
                             <div className="relative" ref={filterRef}>
-                                <button
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                     onClick={() => setShowFilterModal(!showFilterModal)}
                                     className={`flex items-center gap-2 px-3 py-1.5 border rounded text-sm font-medium transition-colors ${showFilterModal ? 'bg-blue-50 border-blue-200 text-[#146eb4]' : 'border-gray-200 text-gray-700 hover:bg-gray-50'
                                         }`}
                                 >
                                     <Filter size={16} className={showFilterModal ? 'text-[#146eb4]' : 'text-gray-500'} />
                                     Filter
-                                </button>
-                                {showFilterModal && (
-                                    <div className="absolute top-full right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden">
-                                        <div className="max-h-[600px] overflow-y-auto p-4 space-y-6">
-                                            {/* Payment Section */}
-                                            <div>
-                                                <h3 className="font-medium text-gray-800 mb-3">Payment</h3>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    {Object.entries(filterPayment).map(([key, value]) => (
-                                                        <label key={key} className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                                </motion.button>
+                                <AnimatePresence>
+                                    {showFilterModal && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="absolute top-full right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-100 z-50 overflow-hidden origin-top-right"
+                                        >
+                                            <div className="max-h-[600px] overflow-y-auto p-4 space-y-6">
+                                                {/* Payment Section */}
+                                                <div>
+                                                    <h3 className="font-medium text-gray-800 mb-3">Payment</h3>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        {Object.entries(filterPayment).map(([key, value]) => (
+                                                            <label key={key} className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={value}
+                                                                    onChange={() => setFilterPayment(prev => ({ ...prev, [key]: !prev[key] }))}
+                                                                    className="rounded border-gray-300 text-[#146eb4] focus:ring-[#146eb4]"
+                                                                />
+                                                                {key.charAt(0).toUpperCase() + key.slice(1) + (key === 'cod' ? ' (COD)' : '') + ' orders'}
+                                                            </label>
+                                                        ))}
+                                                    </div>
+                                                </div>
+
+                                                {/* Amount Section */}
+                                                <div>
+                                                    <h3 className="font-medium text-gray-800 mb-1">Amount</h3>
+                                                    <div className="space-y-1">
+                                                        <div className="text-xs text-gray-500">Condition</div>
+                                                        <div className="relative">
+                                                            <select
+                                                                value={filterAmount}
+                                                                onChange={(e) => setFilterAmount(e.target.value)}
+                                                                className="w-full p-2 border border-gray-200 rounded text-sm text-gray-700 bg-white focus:outline-none focus:border-[#146eb4] appearance-none"
+                                                            >
+                                                                <option>Select</option>
+                                                                <option>Greater than</option>
+                                                                <option>Less than</option>
+                                                            </select>
+                                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Quantity Section */}
+                                                <div>
+                                                    <h3 className="font-medium text-gray-800 mb-1">Quantity</h3>
+                                                    <div className="space-y-1">
+                                                        <div className="text-xs text-gray-500">Condition</div>
+                                                        <div className="relative">
+                                                            <select
+                                                                value={filterQuantity}
+                                                                onChange={(e) => setFilterQuantity(e.target.value)}
+                                                                className="w-full p-2 border border-gray-200 rounded text-sm text-gray-700 bg-white focus:outline-none focus:border-[#146eb4] appearance-none"
+                                                            >
+                                                                <option>Select</option>
+                                                                <option>Greater than</option>
+                                                                <option>Less than</option>
+                                                            </select>
+                                                            <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* Channel Section */}
+                                                <div>
+                                                    <h3 className="font-medium text-gray-800 mb-3">Channel</h3>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
                                                             <input
                                                                 type="checkbox"
-                                                                checked={value}
-                                                                onChange={() => setFilterPayment(prev => ({ ...prev, [key]: !prev[key] }))}
+                                                                checked={filterChannel.online}
+                                                                onChange={() => setFilterChannel(prev => ({ ...prev, online: !prev.online }))}
                                                                 className="rounded border-gray-300 text-[#146eb4] focus:ring-[#146eb4]"
                                                             />
-                                                            {key.charAt(0).toUpperCase() + key.slice(1) + (key === 'cod' ? ' (COD)' : '') + ' orders'}
+                                                            Online orders
                                                         </label>
-                                                    ))}
+                                                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={filterChannel.manual}
+                                                                onChange={() => setFilterChannel(prev => ({ ...prev, manual: !prev.manual }))}
+                                                                className="rounded border-gray-300 text-[#146eb4] focus:ring-[#146eb4]"
+                                                            />
+                                                            Manual orders
+                                                        </label>
+                                                    </div>
                                                 </div>
-                                            </div>
 
-                                            {/* Amount Section */}
-                                            <div>
-                                                <h3 className="font-medium text-gray-800 mb-1">Amount</h3>
-                                                <div className="space-y-1">
-                                                    <div className="text-xs text-gray-500">Condition</div>
-                                                    <div className="relative">
-                                                        <select
-                                                            value={filterAmount}
-                                                            onChange={(e) => setFilterAmount(e.target.value)}
-                                                            className="w-full p-2 border border-gray-200 rounded text-sm text-gray-700 bg-white focus:outline-none focus:border-[#146eb4] appearance-none"
-                                                        >
-                                                            <option>Select</option>
-                                                            <option>Greater than</option>
-                                                            <option>Less than</option>
-                                                        </select>
-                                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                                                {/* Others Section */}
+                                                <div>
+                                                    <h3 className="font-medium text-gray-800 mb-3">Others</h3>
+                                                    <div className="grid grid-cols-2 gap-3">
+                                                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={filterOthers.dukaan}
+                                                                onChange={() => setFilterOthers(prev => ({ ...prev, dukaan: !prev.dukaan }))}
+                                                                className="rounded border-gray-300 text-[#146eb4] focus:ring-[#146eb4]"
+                                                            />
+                                                            Dukaan delivery orders
+                                                        </label>
+                                                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={filterOthers.self}
+                                                                onChange={() => setFilterOthers(prev => ({ ...prev, self: !prev.self }))}
+                                                                className="rounded border-gray-300 text-[#146eb4] focus:ring-[#146eb4]"
+                                                            />
+                                                            Self shipped orders
+                                                        </label>
+                                                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={filterOthers.returned}
+                                                                onChange={() => setFilterOthers(prev => ({ ...prev, returned: !prev.returned }))}
+                                                                className="rounded border-gray-300 text-[#146eb4] focus:ring-[#146eb4]"
+                                                            />
+                                                            Returned orders
+                                                        </label>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            {/* Quantity Section */}
-                                            <div>
-                                                <h3 className="font-medium text-gray-800 mb-1">Quantity</h3>
-                                                <div className="space-y-1">
-                                                    <div className="text-xs text-gray-500">Condition</div>
-                                                    <div className="relative">
-                                                        <select
-                                                            value={filterQuantity}
-                                                            onChange={(e) => setFilterQuantity(e.target.value)}
-                                                            className="w-full p-2 border border-gray-200 rounded text-sm text-gray-700 bg-white focus:outline-none focus:border-[#146eb4] appearance-none"
-                                                        >
-                                                            <option>Select</option>
-                                                            <option>Greater than</option>
-                                                            <option>Less than</option>
-                                                        </select>
-                                                        <ChevronDown size={14} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
-                                                    </div>
-                                                </div>
+                                            {/* Footer */}
+                                            <div className="p-4 border-t border-gray-100 flex items-center justify-end gap-4 bg-gray-50">
+                                                <button
+                                                    onClick={handleResetFilters}
+                                                    className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+                                                >
+                                                    Reset
+                                                </button>
+                                                <button
+                                                    onClick={handleApplyFilters}
+                                                    className="px-6 py-2 bg-[#146eb4] text-white rounded text-sm font-medium hover:bg-[#115a95]"
+                                                >
+                                                    Apply
+                                                </button>
                                             </div>
-
-                                            {/* Channel Section */}
-                                            <div>
-                                                <h3 className="font-medium text-gray-800 mb-3">Channel</h3>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={filterChannel.online}
-                                                            onChange={() => setFilterChannel(prev => ({ ...prev, online: !prev.online }))}
-                                                            className="rounded border-gray-300 text-[#146eb4] focus:ring-[#146eb4]"
-                                                        />
-                                                        Online orders
-                                                    </label>
-                                                    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={filterChannel.manual}
-                                                            onChange={() => setFilterChannel(prev => ({ ...prev, manual: !prev.manual }))}
-                                                            className="rounded border-gray-300 text-[#146eb4] focus:ring-[#146eb4]"
-                                                        />
-                                                        Manual orders
-                                                    </label>
-                                                </div>
-                                            </div>
-
-                                            {/* Others Section */}
-                                            <div>
-                                                <h3 className="font-medium text-gray-800 mb-3">Others</h3>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={filterOthers.dukaan}
-                                                            onChange={() => setFilterOthers(prev => ({ ...prev, dukaan: !prev.dukaan }))}
-                                                            className="rounded border-gray-300 text-[#146eb4] focus:ring-[#146eb4]"
-                                                        />
-                                                        Dukaan delivery orders
-                                                    </label>
-                                                    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={filterOthers.self}
-                                                            onChange={() => setFilterOthers(prev => ({ ...prev, self: !prev.self }))}
-                                                            className="rounded border-gray-300 text-[#146eb4] focus:ring-[#146eb4]"
-                                                        />
-                                                        Self shipped orders
-                                                    </label>
-                                                    <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                                                        <input
-                                                            type="checkbox"
-                                                            checked={filterOthers.returned}
-                                                            onChange={() => setFilterOthers(prev => ({ ...prev, returned: !prev.returned }))}
-                                                            className="rounded border-gray-300 text-[#146eb4] focus:ring-[#146eb4]"
-                                                        />
-                                                        Returned orders
-                                                    </label>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        {/* Footer */}
-                                        <div className="p-4 border-t border-gray-100 flex items-center justify-end gap-4 bg-gray-50">
-                                            <button
-                                                onClick={handleResetFilters}
-                                                className="text-gray-500 hover:text-gray-700 text-sm font-medium"
-                                            >
-                                                Reset
-                                            </button>
-                                            <button
-                                                onClick={handleApplyFilters}
-                                                className="px-6 py-2 bg-[#146eb4] text-white rounded text-sm font-medium hover:bg-[#115a95]"
-                                            >
-                                                Apply
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
                             <div className="relative" ref={lifetimeRef}>
-                                <button
+                                <motion.button
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
                                     onClick={() => setShowLifetimeModal(!showLifetimeModal)}
                                     className={`flex items-center gap-2 px-3 py-1.5 border rounded text-sm font-medium transition-colors ${showLifetimeModal ? 'bg-blue-50 border-blue-200 text-[#146eb4]' : 'border-gray-200 text-gray-700 hover:bg-gray-50'
                                         }`}
@@ -468,35 +480,43 @@ const Orders = () => {
                                     <Clock size={16} className={showLifetimeModal ? 'text-[#146eb4]' : 'text-gray-500'} />
                                     {selectedLifetime}
                                     {showLifetimeModal ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                                </button>
-                                {showLifetimeModal && (
-                                    <div className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50 py-1">
-                                        {[
-                                            'Lifetime',
-                                            'Today',
-                                            'Yesterday',
-                                            'This Week',
-                                            'Last 7 days',
-                                            'Last Week',
-                                            'This Month',
-                                            'Last 30 days',
-                                            'Last Month',
-                                            'Custom Range'
-                                        ].map((option) => (
-                                            <button
-                                                key={option}
-                                                onClick={() => {
-                                                    setSelectedLifetime(option);
-                                                    setShowLifetimeModal(false);
-                                                }}
-                                                className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${selectedLifetime === option ? 'text-[#146eb4] font-medium' : 'text-gray-700'
-                                                    }`}
-                                            >
-                                                {option}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
+                                </motion.button>
+                                <AnimatePresence>
+                                    {showLifetimeModal && (
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                            transition={{ duration: 0.15 }}
+                                            className="absolute top-full right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-50 py-1 origin-top-right"
+                                        >
+                                            {[
+                                                'Lifetime',
+                                                'Today',
+                                                'Yesterday',
+                                                'This Week',
+                                                'Last 7 days',
+                                                'Last Week',
+                                                'This Month',
+                                                'Last 30 days',
+                                                'Last Month',
+                                                'Custom Range'
+                                            ].map((option) => (
+                                                <button
+                                                    key={option}
+                                                    onClick={() => {
+                                                        setSelectedLifetime(option);
+                                                        setShowLifetimeModal(false);
+                                                    }}
+                                                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition-colors ${selectedLifetime === option ? 'text-[#146eb4] font-medium' : 'text-gray-700'
+                                                        }`}
+                                                >
+                                                    {option}
+                                                </button>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
                         </div>
                     </div>
@@ -547,7 +567,9 @@ const Orders = () => {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-4 relative status-dropdown-container">
-                                                <button
+                                                <motion.button
+                                                    whileHover={{ scale: 1.05 }}
+                                                    whileTap={{ scale: 0.95 }}
                                                     onClick={(e) => {
                                                         e.stopPropagation();
                                                         if (openStatusId === order.id) {
@@ -564,7 +586,7 @@ const Orders = () => {
                                                     className="focus:outline-none"
                                                 >
                                                     {renderStatus(order.status)}
-                                                </button>
+                                                </motion.button>
 
                                                 {openStatusId === order.id && (
                                                     <div
@@ -594,7 +616,9 @@ const Orders = () => {
                                                 {order.status === 'Pending' &&
                                                     (order.paymentStatus === 'Paid' || order.paymentStatus === 'Accepted' ||
                                                         order.payment?.toUpperCase() === 'COD') ? (
-                                                    <button
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
                                                         onClick={(e) => {
                                                             e.stopPropagation();
                                                             handleProcessOrder(order.id);
@@ -613,7 +637,7 @@ const Orders = () => {
                                                         ) : (
                                                             'Process Order'
                                                         )}
-                                                    </button>
+                                                    </motion.button>
                                                 ) : (
                                                     <span className="text-gray-400 text-[10px] font-medium uppercase tracking-wider">
                                                         {order.status === 'Packed' ? 'Completed' : 'N/A'}
@@ -644,16 +668,20 @@ const Orders = () => {
                     <div className="bg-white rounded-lg shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
                         <div className="px-8 py-6 flex items-center justify-between">
                             <h2 className="text-xl font-medium text-gray-800">Choose report type</h2>
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.1, rotate: 90 }}
+                                whileTap={{ scale: 0.9 }}
                                 onClick={() => setShowExportModal(false)}
                                 className="text-gray-400 hover:text-gray-600 transition-colors"
                             >
                                 <X size={24} />
-                            </button>
+                            </motion.button>
                         </div>
 
                         <div className="flex items-stretch border-t">
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.05, backgroundColor: "rgba(0,0,0,0.02)" }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => setShowExportModal(false)}
                                 className="flex-1 flex flex-col items-center justify-center py-16 hover:bg-gray-50 transition-colors group"
                             >
@@ -661,9 +689,11 @@ const Orders = () => {
                                     <FileText size={80} strokeWidth={1} />
                                 </div>
                                 <span className="text-sm font-semibold text-gray-600 tracking-widest uppercase">PDF</span>
-                            </button>
+                            </motion.button>
                             <div className="w-[1px] bg-gray-100"></div>
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.05, backgroundColor: "rgba(0,0,0,0.02)" }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => setShowExportModal(false)}
                                 className="flex-1 flex flex-col items-center justify-center py-16 hover:bg-gray-50 transition-colors group"
                             >
@@ -671,7 +701,7 @@ const Orders = () => {
                                     <FileSpreadsheet size={80} strokeWidth={1} />
                                 </div>
                                 <span className="text-sm font-semibold text-gray-600 tracking-widest uppercase">XLSX</span>
-                            </button>
+                            </motion.button>
                         </div>
                     </div>
                 </div>
@@ -687,12 +717,14 @@ const Orders = () => {
                                 <h2 className="text-lg font-bold text-gray-900">Order Details</h2>
                                 <p className="text-xs text-gray-500 mt-1">ID: {selectedOrder.id}</p>
                             </div>
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.1, rotate: 90 }}
+                                whileTap={{ scale: 0.9 }}
                                 onClick={() => setSelectedOrder(null)}
                                 className="p-2 hover:bg-gray-200 rounded-full transition-colors"
                             >
                                 <X size={20} className="text-gray-500" />
-                            </button>
+                            </motion.button>
                         </div>
 
                         {/* Content */}
